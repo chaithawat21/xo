@@ -7,6 +7,7 @@ function App() {
   const [isPlayer1, setIsPlayer1] = useState<boolean>(true);
   const [values, setValues] = useState<(string | null)[]>(Array(9).fill(null));
   const [winner, setWinner] = useState<string | null>(null);
+  const [winningIndices, setWinningIndices] = useState<number[]>([]);
   const [history, setHistory] = useState<Array<(string | null)[]>>([
     Array(9).fill(null),
   ]);
@@ -49,19 +50,21 @@ function App() {
 
   const checkWinner = (values: (string | null)[]) => {
     const lines = [
-      [values[0], values[1], values[2]],
-      [values[3], values[4], values[5]],
-      [values[6], values[7], values[8]],
-      [values[0], values[3], values[6]],
-      [values[1], values[4], values[7]],
-      [values[2], values[5], values[8]],
-      [values[0], values[4], values[8]],
-      [values[2], values[4], values[6]],
+      [0, 1, 2],
+      [3, 4, 5],
+      [6, 7, 8],
+      [0, 3, 6],
+      [1, 4, 7],
+      [2, 5, 8],
+      [0, 4, 8],
+      [2, 4, 6],
     ];
 
     for (let line of lines) {
-      if (line[0] && line[0] === line[1] && line[0] === line[2]) {
-        setWinner(line[0]);
+      const [a, b, c] = line;
+      if (values[a] && values[a] === values[b] && values[a] === values[c]) {
+        setWinner(values[a]);
+        setWinningIndices([a, b, c]);
         return;
       }
     }
@@ -74,6 +77,7 @@ function App() {
   const handleReset = () => {
     setValues(Array(9).fill(null));
     setWinner(null);
+    setWinningIndices([]); // Reset winning indices
     setIsPlayer1(true);
     setHistory([Array(9).fill(null)]);
     setIsReplaying(false);
@@ -112,23 +116,29 @@ function App() {
     setGameMode(mode);
     handleReset(); // Reset the game when changing mode
   };
+  const xoCell = (index: number) =>
+    `bg-gray-300 cursor-pointer flex flex-row justify-center items-center rounded-[20px] ${
+      winningIndices.includes(index) ? "shadow-none outline outline-[1px] outline-gray-200" : ""
+    }`;
 
-  const xoCell = ` bg-gray-300  cursor-pointer flex flex-row justify-center items-center  rounded-[20px]
-`;
-  const xoClick = (value: string | null) =>
+  const xoClick = (value: string | null,index: number) =>
     `absolute text-[5rem] ${
-      value === player1 ? "text-gray-300 " : "text-gray-300"
+      winningIndices.includes(index)
+        ? "custom-text-xo font-bold "
+        : value === player1
+        ? "custom-drop-shadow text-gray-300 font-bold "
+        : "custom-drop-shadow text-gray-300 font-bold "
     }`;
 
   const xoWinner = (player: string) => {
     if (winner === "DRAW") {
-      return <span className="">DRAW</span>;
+      return <span >DRAW</span>;
     }
     if (winner === player) {
-      return <span className="">WIN</span>;
+      return <span >WIN</span>;
     }
     if (winner && winner !== player) {
-      return <span className="">LOSE</span>;
+      return <span >LOSE</span>;
     }
     return null;
   };
@@ -218,80 +228,88 @@ function App() {
 
   return (
     <main className="min-h-screen w-screen bg-gray-300 text-gray-50 flex flex-col  items-center">
-      <h1 className="custom-text-lg" >XO</h1>
+      <div className="flex flex-row">
+      <h1 className="custom-text-lg font-bold">X</h1><h1 className="custom-drop-shadow-lg text-[5rem] text-gray-300 font-bold ">O</h1>
+      </div>
       <div className="radio-input mt-[1rem] ">
-            <label className="label flex flex-row items-center gap-4">
-              <input
-              className=""
-                type="radio"
-                value="PLAYER"
-                checked={gameMode === "PLAYER"}
-                onChange={() => handleGameModeChange("PLAYER")}
-              />
-              <span className="check"></span>
-              Play against another player
-            </label>
-            <label className="label flex flex-row items-center gap-4 ml-[1rem]">
-              <input
-              className="radio__input"
-                type="radio"
-                value="BOT"
-                checked={gameMode === "BOT"}
-                onChange={() => handleGameModeChange("BOT")}
-              />
-              <span className="check"></span>
-              Play against AI
-              
-            </label>
-          </div>
-      <div className="flex flex-row justify-center items-center gap-[2rem] pt-[2rem] ">
-        <div className="gameBoard relative grid grid-cols-3 w-[30rem] h-[30rem] gap-2 ">
+        <label className="label flex flex-row items-center gap-4">
+          <input
+            className=""
+            type="radio"
+            value="PLAYER"
+            checked={gameMode === "PLAYER"}
+            onChange={() => handleGameModeChange("PLAYER")}
+          />
+          <span className="check"></span>
+          VS Player
+        </label>
+        <label className="label flex flex-row items-center gap-4 ml-[1rem]">
+          <input
+            className="radio__input"
+            type="radio"
+            value="BOT"
+            checked={gameMode === "BOT"}
+            onChange={() => handleGameModeChange("BOT")}
+          />
+          <span className="check"></span>
+          VS AI
+        </label>
+      </div>
+      <div className="flex flex-row justify-center items-center gap-[2rem] pt-[2rem] sm:flex-col">
+        <div className="gameBoard relative grid grid-cols-3 w-[30rem] h-[30rem] gap-2 sm:w-[20rem] sm:h-[20rem]">
           {values.map((value, index) => (
             <div
               key={index}
-              className={`${xoCell} shadow-[inset_-5px_-5px_9px_rgba(255,255,255,0.45),inset_5px_5px_9px_rgba(0,0,0,0.3)] active:shadow-none hover:outline hover:outline-gray-200 hover:outline-[1px]`}
+              className={`${xoCell(index)}shadow-[inset_-5px_-5px_9px_rgba(255,255,255,0.45),inset_5px_5px_9px_rgba(0,0,0,0.3)] active:shadow-none hover:outline hover:outline-gray-200 hover:outline-[1px]`}
               onClick={() => handleClick(index)}
             >
-              <p className={`custom-drop-shadow ${xoClick(value)} font-bold `}>{value}</p>
+              <p className={`${xoClick(value,index)} `}>
+                {value}
+              </p>
             </div>
           ))}
         </div>
-        <div className="detailBoard">
+        <div className="detailBoard flex flex-col sm:justify-center sm:items-center">
           <div className="w-[16rem]">
             <div className="flex flex-row items-center gap-4">
-            <p className="custom-drop-shadow-sm text-gray-300 text-[1.5rem] ">
-              PLAYER 01 
-            </p>
-            <p className="custom-text-md ">{xoWinner(player1)}</p>
+              <p className="custom-drop-shadow-sm text-gray-300 text-[1.5rem] ">
+                PLAYER 01
+              </p>
+              <p className="custom-text-md ">{xoWinner(player1)}</p>
             </div>
             <div className="flex flex-row items-center gap-4">
-            <span className="custom-drop-shadow-sm  text-gray-300 text-[1.5rem]">X </span>
-            {!winner && isPlayer1 && (
+              <span className="custom-drop-shadow-sm  text-gray-300 text-[1.5rem]">
+                X{" "}
+              </span>
+              {!winner && isPlayer1 && (
                 <span className="custom-text-sm bg-gray-300  text-[.5rem]">
                   MOVE
                 </span>
               )}
-              </div>
+            </div>
           </div>
           <div className="w-[16rem]">
-          <div className="flex flex-row items-center gap-4">
-            <p className="custom-drop-shadow-sm text-gray-300 text-[1.5rem] ">
-              {`PLAYER ${gameMode === "PLAYER" ? "02" : "AI"}`} 
-            </p>
-            <p className="custom-text-md ">{xoWinner(player2)}</p>
+            <div className="flex flex-row items-center gap-4">
+              <p className="custom-drop-shadow-sm text-gray-300 text-[1.5rem] ">
+                {`PLAYER ${gameMode === "PLAYER" ? "02" : "AI"}`}
+              </p>
+              <p className="custom-text-md ">{xoWinner(player2)}</p>
             </div>
             <div className="flex flex-row items-center gap-4">
-            <span className="custom-drop-shadow-sm  text-gray-300 text-[1.5rem]">O </span>
-            {!winner && !isPlayer1 && (
+              <span className="custom-drop-shadow-sm  text-gray-300 text-[1.5rem]">
+                O{" "}
+              </span>
+              {!winner && !isPlayer1 && (
                 <span className="custom-text-sm bg-gray-300  text-[.5rem]">
                   MOVE
                 </span>
               )}
-              </div>
+            </div>
           </div>
+          <div className="all-button mb-[2rem] flex flex-col sm:justify-center sm:items-center">
           <button
             onClick={handleReset}
-            className="custom-text-sm w-[10rem] bg-gray-300 text-gray-50  p-[1rem] mt-[1rem] rounded-[15px] shadow-[-5px_-5px_9px_rgba(255,255,255,0.45),5px_5px_9px_rgba(0,0,0,0.3)] active:shadow-[inset_-5px_-5px_9px_rgba(255,255,255,0.45),inset_5px_5px_9px_rgba(0,0,0,0.3)] hover:shadow-none hover:outline hover:outline-gray-200 hover:outline-[1px]"
+            className="custom-text-sm w-[10rem] bg-gray-300 text-gray-50  p-[1rem] mt-[1rem] rounded-[15px] shadow-[-5px_-5px_9px_rgba(255,255,255,0.45),5px_5px_9px_rgba(94,104,121,0.3)] active:shadow-[inset_-5px_-5px_9px_rgba(255,255,255,0.45),inset_5px_5px_9px_rgba(94,104,121,0.3)] hover:shadow-none hover:outline hover:outline-gray-200 hover:outline-[1px]"
           >
             {winner ? "PLAY AGAIN" : "RESET"}
           </button>
@@ -333,7 +351,7 @@ function App() {
               </button>
             </div>
           )}
-         
+          </div>
         </div>
       </div>
     </main>
