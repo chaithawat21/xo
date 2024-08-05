@@ -1,21 +1,27 @@
 import { useState, useEffect } from "react";
 
+
 function App() {
   const player1 = "X";
   const player2 = "O";
 
-  const [isPlayer1, setIsPlayer1] = useState<boolean>(true);
-  const [values, setValues] = useState<(string | null)[]>(Array(9).fill(null));
-  const [winner, setWinner] = useState<string | null>(null);
-  const [winningIndices, setWinningIndices] = useState<number[]>([]);
+  const [isPlayer1, setIsPlayer1] = useState<boolean>(true); // true = player 1, false = player 2 or bot 
+  const [values, setValues] = useState<(string | null)[]>(Array(9).fill(null)); // "X", "O", or null
+  const [winner, setWinner] = useState<string | null>(null); // "X", "O", or "DRAW"
+  const [winningIndices, setWinningIndices] = useState<number[]>([]); // for styling the winning line
+
+  // Replay mode /////////////////////////////////// 
   const [history, setHistory] = useState<Array<(string | null)[]>>([
     Array(9).fill(null),
-  ]);
-  const [isReplaying, setIsReplaying] = useState<boolean>(false);
+  ]); // store board state to replaying the game
+  const [isReplaying, setIsReplaying] = useState<boolean>(false); // true = replay mode on
   const [replayIndex, setReplayIndex] = useState<number>(0);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
-  const [gameMode, setGameMode] = useState<"PLAYER" | "BOT">("PLAYER");
 
+  // Game mode /////////////////////////////////// 
+  const [gameMode, setGameMode] = useState<"PLAYER" | "BOT">("PLAYER"); // game mode by player or bot
+
+  // Automatic Replay Control /////////////////////////////////// 
   useEffect(() => {
     let replayTimer: NodeJS.Timeout;
     if (isPlaying && replayIndex < history.length - 1) {
@@ -29,6 +35,7 @@ function App() {
     return () => clearTimeout(replayTimer);
   }, [isPlaying, replayIndex, history]);
 
+  // Bot move /////////////////////////////////// 
   useEffect(() => {
     if (!isPlayer1 && !winner && gameMode === "BOT") {
       const aiMove = findBestMove(values);
@@ -36,6 +43,7 @@ function App() {
     }
   }, [isPlayer1, winner, values, gameMode]);
 
+  // Handles player move /////////////////////////////////// 
   const handleClick = (index: number) => {
     if (winner || values[index] || isReplaying) return;
 
@@ -48,6 +56,7 @@ function App() {
     checkWinner(newValues);
   };
 
+  // Checks winner or draw ///////////////////////////////////
   const checkWinner = (values: (string | null)[]) => {
     const lines = [
       [0, 1, 2],
@@ -74,6 +83,7 @@ function App() {
     }
   };
 
+  // Reset gmae ///////////////////////////////////
   const handleReset = () => {
     setValues(Array(9).fill(null));
     setWinner(null);
@@ -84,20 +94,19 @@ function App() {
     setReplayIndex(0);
     setIsPlaying(false);
   };
-
+  // Replay mode ///////////////////////////////////
   const handleReplay = () => {
     setIsReplaying(true);
     setReplayIndex(0);
     setIsPlaying(true);
   };
-
+  // Navigate through the history of moves during replay ///////////////////////////////////
   const handleNext = () => {
     if (replayIndex < history.length - 1) {
       setReplayIndex(replayIndex + 1);
       setValues(history[replayIndex + 1]);
     }
   };
-
   const handlePrevious = () => {
     if (replayIndex > 0) {
       setReplayIndex(replayIndex - 1);
@@ -105,31 +114,34 @@ function App() {
     }
   };
 
+  // Control the playback of the replay ///////////////////////////////////
   const handlePause = () => {
     setIsPlaying(false);
   };
-
   const handlePlay = () => {
     setIsPlaying(true);
   };
+
+  // Switches between player and bot ///////////////////////////////////
   const handleGameModeChange = (mode: "PLAYER" | "BOT") => {
     setGameMode(mode);
-    handleReset(); // Reset the game when changing mode
+    handleReset();
   };
-  const xoCell = (index: number) =>
-    `bg-gray-300 cursor-pointer flex flex-row justify-center items-center rounded-[20px] ${
-      winningIndices.includes(index) ? "shadow-none outline outline-[1px] outline-gray-200" : ""
-    }`;
 
-  const xoClick = (value: string | null,index: number) =>
-    `absolute text-[5rem] ${
-      winningIndices.includes(index)
-        ? "custom-text-xo font-bold "
-        : value === player1
+  // styling helper ///////////////////////////////////
+  // Board CSS
+  const xoCell = (index: number) =>
+    `bg-gray-300 cursor-pointer flex flex-row justify-center items-center rounded-[20px] ${winningIndices.includes(index) ? "shadow-none outline outline-[1px] outline-gray-200" : ""
+    }`;
+  // Click Board CSS
+  const xoClick = (value: string | null, index: number) =>
+    `absolute text-[5rem] ${winningIndices.includes(index)
+      ? "custom-text-xo font-bold "
+      : value === player1
         ? "custom-drop-shadow text-gray-300 font-bold "
         : "custom-drop-shadow text-gray-300 font-bold "
     }`;
-
+  // Show Result Game CSS
   const xoWinner = (player: string) => {
     if (winner === "DRAW") {
       return <span >DRAW</span>;
@@ -143,7 +155,7 @@ function App() {
     return null;
   };
 
-  // Minimax Algorithm
+  // Minimax Algorithm ///////////////////////////////////
   const minimax = (
     newValues: (string | null)[],
     depth: number,
@@ -185,6 +197,8 @@ function App() {
     }
   };
 
+  // Minimax Algorithm find best move ///////////////////////////////////
+  // over all possible moves, applies the minimax algorithm, and returns the index of the best move.
   const findBestMove = (newValues: (string | null)[]): number => {
     let bestScore = -Infinity;
     let move = -1;
@@ -202,6 +216,7 @@ function App() {
     return move;
   };
 
+  // Minimax Algorithm check winner ///////////////////////////////////
   const getWinner = (values: (string | null)[]): string | null => {
     const lines = [
       [values[0], values[1], values[2]],
@@ -229,7 +244,7 @@ function App() {
   return (
     <main className="min-h-screen w-screen bg-gray-300 text-gray-50 flex flex-col  items-center">
       <div className="flex flex-row">
-      <h1 className="custom-text-lg font-bold">X</h1><h1 className="custom-drop-shadow-lg text-[5rem] text-gray-300 font-bold ">O</h1>
+        <h1 className="custom-text-lg font-bold">X</h1><h1 className="custom-drop-shadow-lg text-[5rem] text-gray-300 font-bold ">O</h1>
       </div>
       <div className="radio-input mt-[1rem] ">
         <label className="label flex flex-row items-center gap-4">
@@ -263,7 +278,7 @@ function App() {
               className={`${xoCell(index)}shadow-[inset_-5px_-5px_9px_rgba(255,255,255,0.45),inset_5px_5px_9px_rgba(0,0,0,0.3)] active:shadow-none hover:outline hover:outline-gray-200 hover:outline-[1px]`}
               onClick={() => handleClick(index)}
             >
-              <p className={`${xoClick(value,index)} `}>
+              <p className={`${xoClick(value, index)} `}>
                 {value}
               </p>
             </div>
@@ -307,50 +322,50 @@ function App() {
             </div>
           </div>
           <div className="all-button mb-[2rem] flex flex-col sm:justify-center sm:items-center">
-          <button
-            onClick={handleReset}
-            className="custom-text-sm w-[10rem] bg-gray-300 text-gray-50  p-[1rem] mt-[1rem] rounded-[15px] shadow-[-5px_-5px_9px_rgba(255,255,255,0.45),5px_5px_9px_rgba(94,104,121,0.3)] active:shadow-[inset_-5px_-5px_9px_rgba(255,255,255,0.45),inset_5px_5px_9px_rgba(94,104,121,0.3)] hover:shadow-none hover:outline hover:outline-gray-200 hover:outline-[1px]"
-          >
-            {winner ? "PLAY AGAIN" : "RESET"}
-          </button>
-          {winner && (
-            <div>
-              <button
-                onClick={handleReplay}
-                className="custom-text-sm w-[10rem] bg-gray-300 text-gray-50  p-[1rem] mt-[1rem] rounded-[15px] shadow-[-5px_-5px_9px_rgba(255,255,255,0.45),5px_5px_9px_rgba(94,104,121,0.3)] active:shadow-[inset_-5px_-5px_9px_rgba(255,255,255,0.45),inset_5px_5px_9px_rgba(94,104,121,0.3)] hover:shadow-none hover:outline hover:outline-gray-200 hover:outline-[1px]"
-              >
-                REPLAY
-              </button>
-            </div>
-          )}
-          {isReplaying && (
-            <div className="flex flex-row gap-[.5rem]">
-              <button
-                onClick={handlePrevious}
-                className="custom-text-sm bg-gray-300 text-gray-50 text-[.5rem]  p-[.5rem] mt-[1rem] rounded-[10px] shadow-[-5px_-5px_9px_rgba(255,255,255,0.45),5px_5px_9px_rgba(94,104,121,0.3)] active:shadow-[inset_-5px_-5px_9px_rgba(255,255,255,0.45),inset_5px_5px_9px_rgba(94,104,121,0.3)] hover:shadow-none hover:outline hover:outline-gray-200 hover:outline-[1px]"
-              >
-                PREVIOUS
-              </button>
-              <button
-                onClick={handleNext}
-                className="custom-text-sm bg-gray-300 text-gray-50 text-[.5rem]  p-[.5rem] mt-[1rem] rounded-[10px] shadow-[-5px_-5px_9px_rgba(255,255,255,0.45),5px_5px_9px_rgba(94,104,121,0.3)] active:shadow-[inset_-5px_-5px_9px_rgba(255,255,255,0.45),inset_5px_5px_9px_rgba(94,104,121,0.3)] hover:shadow-none hover:outline hover:outline-gray-200 hover:outline-[1px]"
-              >
-                NEXT
-              </button>
-              <button
-                onClick={handlePause}
-                className="custom-text-sm bg-gray-300 text-gray-50 text-[.5rem]  p-[.5rem] mt-[1rem] rounded-[10px] shadow-[-5px_-5px_9px_rgba(255,255,255,0.45),5px_5px_9px_rgba(94,104,121,0.3)] active:shadow-[inset_-5px_-5px_9px_rgba(255,255,255,0.45),inset_5px_5px_9px_rgba(94,104,121,0.3)] hover:shadow-none hover:outline hover:outline-gray-200 hover:outline-[1px]"
-              >
-                PAUSE
-              </button>
-              <button
-                onClick={handlePlay}
-                className="custom-text-sm bg-gray-300 text-gray-50 text-[.5rem]  p-[.5rem] mt-[1rem] rounded-[10px] shadow-[-5px_-5px_9px_rgba(255,255,255,0.45),5px_5px_9px_rgba(94,104,121,0.3)] active:shadow-[inset_-5px_-5px_9px_rgba(255,255,255,0.45),inset_5px_5px_9px_rgba(94,104,121,0.3)] hover:shadow-none hover:outline hover:outline-gray-200 hover:outline-[1px]"
-              >
-                PLAY
-              </button>
-            </div>
-          )}
+            <button
+              onClick={handleReset}
+              className="custom-text-sm w-[10rem] bg-gray-300 text-gray-50  p-[1rem] mt-[1rem] rounded-[15px] shadow-[-5px_-5px_9px_rgba(255,255,255,0.45),5px_5px_9px_rgba(94,104,121,0.3)] active:shadow-[inset_-5px_-5px_9px_rgba(255,255,255,0.45),inset_5px_5px_9px_rgba(94,104,121,0.3)] hover:shadow-none hover:outline hover:outline-gray-200 hover:outline-[1px]"
+            >
+              {winner ? "PLAY AGAIN" : "RESET"}
+            </button>
+            {winner && (
+              <div>
+                <button
+                  onClick={handleReplay}
+                  className="custom-text-sm w-[10rem] bg-gray-300 text-gray-50  p-[1rem] mt-[1rem] rounded-[15px] shadow-[-5px_-5px_9px_rgba(255,255,255,0.45),5px_5px_9px_rgba(94,104,121,0.3)] active:shadow-[inset_-5px_-5px_9px_rgba(255,255,255,0.45),inset_5px_5px_9px_rgba(94,104,121,0.3)] hover:shadow-none hover:outline hover:outline-gray-200 hover:outline-[1px]"
+                >
+                  REPLAY
+                </button>
+              </div>
+            )}
+            {isReplaying && (
+              <div className="flex flex-row gap-[.5rem]">
+                <button
+                  onClick={handlePrevious}
+                  className="custom-text-sm bg-gray-300 text-gray-50 text-[.5rem]  p-[.5rem] mt-[1rem] rounded-[10px] shadow-[-5px_-5px_9px_rgba(255,255,255,0.45),5px_5px_9px_rgba(94,104,121,0.3)] active:shadow-[inset_-5px_-5px_9px_rgba(255,255,255,0.45),inset_5px_5px_9px_rgba(94,104,121,0.3)] hover:shadow-none hover:outline hover:outline-gray-200 hover:outline-[1px]"
+                >
+                  PREVIOUS
+                </button>
+                <button
+                  onClick={handleNext}
+                  className="custom-text-sm bg-gray-300 text-gray-50 text-[.5rem]  p-[.5rem] mt-[1rem] rounded-[10px] shadow-[-5px_-5px_9px_rgba(255,255,255,0.45),5px_5px_9px_rgba(94,104,121,0.3)] active:shadow-[inset_-5px_-5px_9px_rgba(255,255,255,0.45),inset_5px_5px_9px_rgba(94,104,121,0.3)] hover:shadow-none hover:outline hover:outline-gray-200 hover:outline-[1px]"
+                >
+                  NEXT
+                </button>
+                <button
+                  onClick={handlePause}
+                  className="custom-text-sm bg-gray-300 text-gray-50 text-[.5rem]  p-[.5rem] mt-[1rem] rounded-[10px] shadow-[-5px_-5px_9px_rgba(255,255,255,0.45),5px_5px_9px_rgba(94,104,121,0.3)] active:shadow-[inset_-5px_-5px_9px_rgba(255,255,255,0.45),inset_5px_5px_9px_rgba(94,104,121,0.3)] hover:shadow-none hover:outline hover:outline-gray-200 hover:outline-[1px]"
+                >
+                  PAUSE
+                </button>
+                <button
+                  onClick={handlePlay}
+                  className="custom-text-sm bg-gray-300 text-gray-50 text-[.5rem]  p-[.5rem] mt-[1rem] rounded-[10px] shadow-[-5px_-5px_9px_rgba(255,255,255,0.45),5px_5px_9px_rgba(94,104,121,0.3)] active:shadow-[inset_-5px_-5px_9px_rgba(255,255,255,0.45),inset_5px_5px_9px_rgba(94,104,121,0.3)] hover:shadow-none hover:outline hover:outline-gray-200 hover:outline-[1px]"
+                >
+                  PLAY
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>
