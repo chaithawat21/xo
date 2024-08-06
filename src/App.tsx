@@ -10,7 +10,7 @@ function App() {
   const [winner, setWinner] = useState<string | null>(null); // "X", "O", or "DRAW"
   const [winningIndices, setWinningIndices] = useState<number[]>([]); // for styling the winning line
 
-  // Replay mode /////////////////////////////////// 
+  // Replay mode state /////////////////////////////////// 
   const [history, setHistory] = useState<Array<(string | null)[]>>([
     Array(9).fill(null),
   ]); // store board state to replaying the game
@@ -18,30 +18,8 @@ function App() {
   const [replayIndex, setReplayIndex] = useState<number>(0);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
 
-  // Game mode /////////////////////////////////// 
+  // Game mode state /////////////////////////////////// 
   const [gameMode, setGameMode] = useState<"PLAYER" | "BOT">("PLAYER"); // game mode by player or bot
-
-  // Automatic Replay Control /////////////////////////////////// 
-  useEffect(() => {
-    let replayTimer: NodeJS.Timeout;
-    if (isPlaying && replayIndex < history.length - 1) {
-      replayTimer = setTimeout(() => {
-        setReplayIndex(replayIndex + 1);
-        setValues(history[replayIndex + 1]);
-      }, 1000);
-    } else {
-      setIsPlaying(false);
-    }
-    return () => clearTimeout(replayTimer);
-  }, [isPlaying, replayIndex, history]);
-
-  // Bot move /////////////////////////////////// 
-  useEffect(() => {
-    if (!isPlayer1 && !winner && gameMode === "BOT") {
-      const aiMove = findBestMove(values);
-      handleClick(aiMove);
-    }
-  }, [isPlayer1, winner, values, gameMode]);
 
   // Handles player move /////////////////////////////////// 
   const handleClick = (index: number) => {
@@ -50,7 +28,7 @@ function App() {
     const newValues = values.slice();
     newValues[index] = isPlayer1 ? player1 : player2;
     setValues(newValues);
-    setHistory([...history, newValues]);
+    setHistory([...history, newValues]); // store replay mode state 
     setIsPlayer1(!isPlayer1);
 
     checkWinner(newValues);
@@ -94,6 +72,8 @@ function App() {
     setReplayIndex(0);
     setIsPlaying(false);
   };
+
+
   // Replay mode ///////////////////////////////////
   const handleReplay = () => {
     setIsReplaying(true);
@@ -122,11 +102,20 @@ function App() {
     setIsPlaying(true);
   };
 
-  // Switches between player and bot ///////////////////////////////////
-  const handleGameModeChange = (mode: "PLAYER" | "BOT") => {
-    setGameMode(mode);
-    handleReset();
-  };
+  // Automatic Replay Control /////////////////////////////////// 
+  useEffect(() => {
+    let replayTimer: NodeJS.Timeout;
+    if (isPlaying && replayIndex < history.length - 1) {
+      replayTimer = setTimeout(() => {
+        setReplayIndex(replayIndex + 1);
+        setValues(history[replayIndex + 1]);
+      }, 1000);
+    } else {
+      setIsPlaying(false);
+    }
+    return () => clearTimeout(replayTimer);
+  }, [isPlaying, replayIndex, history]);
+ 
 
   // styling helper ///////////////////////////////////
   // Board CSS
@@ -157,22 +146,22 @@ function App() {
 
   // Minimax Algorithm ///////////////////////////////////
   const minimax = (
-    newValues: (string | null)[],
-    depth: number,
-    isMaximizing: boolean
+    newValues: (string | null)[], // current state "X", "O", or null
+    depth: number, // recursion, indicating how far ahead the function is evaluating
+    isMaximizing: boolean // bot move or player move
   ): number => {
     const scores: { [key: string]: number } = {
-      X: -1,
-      O: 1,
-      DRAW: 0,
+      X: -1, // player win
+      O: 1, // bot win
+      DRAW: 0, // draw
     };
 
-    const result = getWinner(newValues);
+    const result = getWinner(newValues); // first check winner
     if (result !== null) {
       return scores[result];
     }
 
-    if (isMaximizing) {
+    if (isMaximizing) { // true = bot find the move 
       let bestScore = -Infinity;
       for (let i = 0; i < newValues.length; i++) {
         if (newValues[i] === null) {
@@ -182,8 +171,8 @@ function App() {
           bestScore = Math.max(score, bestScore);
         }
       }
-      return bestScore;
-    } else {
+      return bestScore; // keeps track of the highest score and returns
+    } else { // false = player find the move
       let bestScore = Infinity;
       for (let i = 0; i < newValues.length; i++) {
         if (newValues[i] === null) {
@@ -193,7 +182,7 @@ function App() {
           bestScore = Math.min(score, bestScore);
         }
       }
-      return bestScore;
+      return bestScore; // keeps track of the highest score and returns 
     }
   };
 
@@ -239,6 +228,20 @@ function App() {
       return "DRAW";
     }
     return null;
+  };
+
+    // Bot move /////////////////////////////////// 
+    useEffect(() => {
+      if (!isPlayer1 && !winner && gameMode === "BOT") {
+        const aiMove = findBestMove(values);
+        handleClick(aiMove);
+      }
+    }, [isPlayer1, winner, values, gameMode]);
+
+       // Switches between player and bot ///////////////////////////////////
+   const handleGameModeChange = (mode: "PLAYER" | "BOT") => {
+    setGameMode(mode);
+    handleReset();
   };
 
   return (
